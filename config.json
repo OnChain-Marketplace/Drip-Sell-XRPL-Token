@@ -1,0 +1,19 @@
+{
+    "nodes": [ "wss://s2.ripple.com/", "wss://s1.ripple.com/", "wss://x1.sologenic.org", "wss://xrpl.ws/", "wss://xrplcluster.com/" ],
+    "retrymax": 5,
+    "secondsBetweenChecks": 300,
+    "tokens": [
+        {
+            "name": "OCW",
+            "hex": "OCW",
+            "issuer": "rK9DrarGKnVEo2nYp5MfVRXRYf5yRX3mwD",
+            "relativeOrderPrice": "1.02",
+            "minimumPriceXRP": "10",
+            "orderExpiry": "43200",
+            "amountPerSell": "1",
+            "seedOfWallet": "",
+            "runUntilCrash": true,
+            "maxIterations": 1
+        }
+    ]
+}
