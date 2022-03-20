@@ -10,16 +10,16 @@ The user can set several variables in the config file
 2) retrymax: Max attempts repeat a process if an error was found (number)
 3) secondsBetweenChecks: Seconds between each iteration of the program's checks
 4) tokens: Array of variables (used if multiple accounts/tokens are being used)
-a) name: The name of the token (for logging purposes)
-b) hex: Hexcode for the token (As defined by the XRPL/Rippled)
-c) issuer: Issuing address of the token (XRPL)
-d) relativeOrderPrice: Price to sell at, relative to the lowest sell price (number)
-e) minimumPriceXRP: Minimum price to sell token ($XRP per token)
-f) orderExpiry: Seconds until the order expires (from set)
-g) amountPerSell: Amount of tokens to sell in each order
-h) seedOfWallet: Seed of the XRPL wallet holding the funds
-o) runUntilCrash: Boolean, if true the program will run indefinetly for this token (If false, refer to maxIterations)
-j) maxIterations: Max cycles/checks this token will participate in, regardless of sell activity (only relevant if runUntilCrash is true)
+5) name: The name of the token (for logging purposes)
+6) hex: Hexcode for the token (As defined by the XRPL/Rippled)
+7) issuer: Issuing address of the token (XRPL)
+8) relativeOrderPrice: Price to sell at, relative to the lowest sell price (number)
+9) minimumPriceXRP: Minimum price to sell token ($XRP per token)
+10) orderExpiry: Seconds until the order expires (from set)
+11) amountPerSell: Amount of tokens to sell in each order
+12) seedOfWallet: Seed of the XRPL wallet holding the funds
+13) runUntilCrash: Boolean, if true the program will run indefinetly for this token (If false, refer to maxIterations)
+14) maxIterations: Max cycles/checks this token will participate in, regardless of sell activity (only relevant if runUntilCrash is true)
      
 # Operation 
 This program will create sell orders, as defined by the variables, and will only allow 1 eligible sellOffer to exist at any point. If the sell Offer is filled, or expires, the program will issue another order (relative with the varibales and the current market movements). In the event an order has expired, but has not been removed by Rippled, this program will remove the order, and issue a new one. The frequency this program will repeat this process as per the "secondsBetweenChecks" variable.
