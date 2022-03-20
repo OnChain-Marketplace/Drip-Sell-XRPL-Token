@@ -44,4 +44,3 @@ xrpl -> https://github.com/XRPLF/xrpl.js
 
 # Extra
 Built using JS, OnChain Whales
-![image](https://user-images.githubusercontent.com/100499057/159149999-635012e3-b314-402d-bd36-3343726546c0.png)
