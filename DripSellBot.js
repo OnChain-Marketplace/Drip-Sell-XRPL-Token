@@ -106,6 +106,8 @@ async function main() {
                 }
                 console.log(`CONTINUING UNTIL ${maxIterations} SELL OFFERS ARE PLACED`)
             }
+            
+            var run = true
 
             //Check for Old Orders
             var searchCount = 0
