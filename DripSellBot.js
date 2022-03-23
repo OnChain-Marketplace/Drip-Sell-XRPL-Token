@@ -46,6 +46,8 @@ async function main() {
         client = await xReconnect(client, nodes);
     });
 
+    console.log(`—————\nThis Tool Was Developed, For Public Use, by OnChain Whales\nPlease visit our website @ onchainwhales.net to see just what we can bring to the NFTs on the XRPL\nTwitter: @onchainwhales\nEmail: josh@onchainwhales.net—————\n`)
+    
     //Start of loops
     var run = true
     var count = 1
@@ -271,6 +273,9 @@ async function main() {
     //Once all variables have complete their cycles, exit the program
     client.disconnect()
     console.log(`\n\nALL SELLS DONE FOR SPECIFIED TIME`)
+    
+    console.log(`\n\n\n—————\nWebsite @ onchainwhales.net\nTwitter: @onchainwhales\nEmail: josh@onchainwhales.net—————\n`)
+
     process.exit(1)
 }
 main()
