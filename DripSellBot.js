@@ -7,15 +7,18 @@ const {currentledger} = require("./Functions/currentledger")
 const {wait} = require("./Functions/wait")
 const {siground} = require('./Functions/siground')
 const {lowestSell} = require('./Functions/lowestSell')
-const {xconnect, xReconnect} = require('./Functions/xrplConnect')
+const {getalltls} = require('./Functions/getalltls')
+const {
+    xconnect,
+    xReconnect
+} = require('./Functions/xrplConnect')
 
 //config file reporting
 const {
     nodes,
     retrymax,
     tokens,
-    secondsBetweenChecks,
-    maxIterations
+    secondsBetweenChecks
 } = require('./config.json');
 
 //Define initial client
@@ -46,8 +49,8 @@ async function main() {
         client = await xReconnect(client, nodes);
     });
 
-    console.log(`—————\nThis Tool Was Developed, For Public Use, by OnChain Whales\nPlease visit our website @ onchainwhales.net to see just what we can bring to the NFTs on the XRPL\nTwitter: @onchainwhales\nEmail: josh@onchainwhales.net—————\n`)
-    
+    console.log(`—————\nThis Tool Was Developed, For Public Use, by OnChain Whales\nPlease visit our website @ onchainwhales.net to see just what we can bring to the NFTs on the XRPL\nTwitter: @onchainwhales\nEmail: josh@onchainwhales.net\n—————\n`)
+
     //Start of loops
     var run = true
     var count = 1
@@ -85,15 +88,16 @@ async function main() {
             var hex = tokens[a].hex
             var issuer = tokens[a].issuer
             var minPrice = tokens[a].minimumPriceXRP
-            var value = tokens[a].amountPerSell
             var relativeOP = tokens[a].relativeOrderPrice
             var orderExpiry = tokens[a].orderExpiry
             var seedOfWallet = tokens[a].seedOfWallet
             var maxIterations = tokens[a].maxIterations
             var runUntilCrash = tokens[a].runUntilCrash
+            var constAmount = tokens[a].constAmount
+
 
             var wallet = xrpl.Wallet.fromSeed(seedOfWallet)
-            console.log(`\nUSING ACCOUNT: ${wallet.classicAddress}\nFOR: ${value} $${name}`)
+            console.log(`\nUSING ACCOUNT: ${wallet.classicAddress}`)
 
             var expiration = (Number(rippleLedgerTime) + Number(orderExpiry))
 
@@ -104,9 +108,9 @@ async function main() {
                     console.log(`Maxed Out Already`)
                     continue
                 }
-                console.log(`CONTINUING UNTIL ${maxIterations} SELL OFFERS ARE PLACED`)
+                console.log(`CONTINUING UNTIL ${maxIterations} ITERATIONS`)
             }
-            
+
             var run = true
 
             //Check for Old Orders
@@ -120,7 +124,7 @@ async function main() {
                         let offers = await client.request({
                             command: "book_offers",
                             taker: wallet.classicAddress,
-                            ledger_index: "validated",
+                            ledger_index: currentledgerindex,
                             taker_pays: {
                                 currency: "XRP"
                             },
@@ -194,7 +198,40 @@ async function main() {
                 console.log(`Existing Viable Offer Found`)
                 continue
             }
-            console.log(`ISSUING NEW OFFER`)
+
+            if (constAmount) {
+                var value = tokens[a].amountPerSell
+                console.log(`ISSUING NEW OFFER -> FOR CONSTANT ${value} $${name}`)
+            } else {
+                //Get Trustlines
+                var checkCount = 0
+                while (checkCount < retrymax) {
+                    try {
+                        var trustlines = await getalltls(client, wallet.classicAddress, currentledgerindex)
+                        console.log(`GOT ALL HOLDINGS OF ${wallet.classicAddress}`)
+                        break
+                    } catch (err) {
+                        console.log(`Error Getting Trustlines ${searchCount}`)
+                        checkCount += 1
+                    }
+
+                    if (checkCount == retrymax) {
+                        fs.writeFileSync("./ERRORS.txt", `\nCOULDN"T GET TRUSTLINES ${a}\nLIKELY TO BE AN ISSUE WITH DATA IN THE CONFIG FILE (OR CONNECTIONS/WEBSOCKET)\n TIME:${start}`)
+                        process.exit(1)
+                    }
+                }
+
+                for (b in trustlines) {
+                    if (trustlines[b].currency == hex) {
+                        if (trustlines[b].account == issuer) {
+                            var total = Math.abs(trustlines[b].balance)
+                        }
+                    }
+                }
+
+                var value = Number(total) * Number(tokens[a].ratioPerSell)
+                console.log(`ISSUING NEW OFFER -> FOR VARIABLE ${value} $${name}`)
+            }
 
             //Get Lowest Sell Price
             var checkCount = 0
@@ -275,8 +312,8 @@ async function main() {
     //Once all variables have complete their cycles, exit the program
     client.disconnect()
     console.log(`\n\nALL SELLS DONE FOR SPECIFIED TIME`)
-    
-    console.log(`\n\n\n—————\nWebsite @ onchainwhales.net\nTwitter: @onchainwhales\nEmail: josh@onchainwhales.net—————\n`)
+
+    console.log(`\n\n\n—————\nWebsite @ onchainwhales.net\nTwitter: @onchainwhales\nEmail: josh@onchainwhales.net\n—————\n`)
 
     process.exit(1)
 }
