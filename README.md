@@ -16,25 +16,28 @@ The user can set several variables in the config file
 8) relativeOrderPrice: Price to sell at, relative to the lowest sell price (number)
 9) minimumPriceXRP: Minimum price to sell token ($XRP per token)
 10) orderExpiry: Seconds until the order expires (from set)
-11) amountPerSell: Amount of tokens to sell in each order
-12) seedOfWallet: Seed of the XRPL wallet holding the funds
-13) runUntilCrash: Boolean, if true the program will run indefinetly for this token (If false, refer to maxIterations)
-14) maxIterations: Max cycles/checks this token will participate in, regardless of sell activity (only relevant if runUntilCrash is true)
+11) constAmount: Boolean, if true, the tool will only place an order for the "amountPerSell" variable, if false, uses "ratioPerSell" and the wallet holdings
+12) amountPerSell: Amount of tokens to sell in each order (if "constAmount" == true)
+13) ratioPerSell: Ratio (0 to 1) of the wallet's holdings to list on each round (if "constAmount" == false)
+14) seedOfWallet: Seed of the XRPL wallet holding the funds
+15) runUntilCrash: Boolean, if true the program will run indefinetly for this token (If false, refer to maxIterations)
+16) maxIterations: Max cycles/checks this token will participate in, regardless of sell activity (only relevant if runUntilCrash is false)
      
 # Operation 
 This program will create sell orders, as defined by the variables, and will only allow 1 eligible sellOffer to exist at any point. If the sell Offer is filled, or expires, the program will issue another order (relative with the varibales and the current market movements). In the event an order has expired, but has not been removed by Rippled, this program will remove the order, and issue a new one. The frequency this program will repeat this process as per the "secondsBetweenChecks" variable.
 
 # Flow
 1) Connect to XRPL
-2) Repeat steps 3 to 9 as often as necessary (defined by "runUntilCrash" and "maxIterations")
+2) Repeat steps 3 to 10 as often as necessary (defined by "runUntilCrash" and "maxIterations")
 3) Get the most recent validated ledger data
-4) Repeat steps 5 to 9 for each token (as defined in the config file)
+4) Repeat steps 5 to 10 for each token (as defined in the config file)
 5) Check if the token should run (defined by "runUntilCrash" and "maxIterations")
 6) Check the OrderBook for any relevant offers, and remove any expired orders
-7) If an eligible order exists, skip the steps 8 to 9
-8) Get the lowest sell price on the XRPL
-9) Issue a sell price, relative to the data in step 8, using the variables defined in the config file
-10) Close the program once all token cycles are complete 
+7) If an eligible order exists, skip the steps 8 to 10
+8) Check if the sell value is constant, or variable, and adjust accordingly
+9) Get the lowest sell price on the XRPL
+10) Issue a sell price, relative to the data in step 8, using the variables defined in the config file
+11) Close the program once all token cycles are complete 
 
 # Error Handling 
 All attempts will be made x times (defined in config file), in the event an attempt fails everytime, the program will close and create and log the error within an ERRORs.txt. The user can then resolve any issues as needed.
