@@ -8,6 +8,7 @@ const {wait} = require("./Functions/wait")
 const {siground} = require('./Functions/siground')
 const {lowestSell} = require('./Functions/lowestSell')
 const {getalltls} = require('./Functions/getalltls')
+const {round} = require(`./Functions/round`)
 const {
     xconnect,
     xReconnect
@@ -200,7 +201,7 @@ async function main() {
             }
 
             if (constAmount) {
-                var value = tokens[a].amountPerSell
+                var value = round(tokens[a].amountPerSell, 8)
                 console.log(`ISSUING NEW OFFER -> FOR CONSTANT ${value} $${name}`)
             } else {
                 //Get Trustlines
@@ -229,7 +230,7 @@ async function main() {
                     }
                 }
 
-                var value = Number(total) * Number(tokens[a].ratioPerSell)
+                var value = round(Number(total) * Number(tokens[a].ratioPerSell), 8)
                 console.log(`ISSUING NEW OFFER -> FOR VARIABLE ${value} $${name}`)
             }
 
