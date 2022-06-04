@@ -3,12 +3,24 @@ const xrpl = require('xrpl')
 const fs = require('fs')
 
 //LOCALLY MADE COMMANDS
-const {currentledger} = require("./Functions/currentledger")
-const {wait} = require("./Functions/wait")
-const {siground} = require('./Functions/siground')
-const {lowestSell} = require('./Functions/lowestSell')
-const {getalltls} = require('./Functions/getalltls')
-const {round} = require(`./Functions/round`)
+const {
+    currentledger
+} = require("./Functions/currentledger")
+const {
+    wait
+} = require("./Functions/wait")
+const {
+    siground
+} = require('./Functions/siground')
+const {
+    lowestSell
+} = require('./Functions/lowestSell')
+const {
+    getalltls
+} = require('./Functions/getalltls')
+const {
+    round
+} = require(`./Functions/round`)
 const {
     xconnect,
     xReconnect
@@ -97,7 +109,13 @@ async function main() {
             var constAmount = tokens[a].constAmount
 
 
-            var wallet = xrpl.Wallet.fromSeed(seedOfWallet)
+            try {
+                var wallet = xrpl.Wallet.fromSeed(seedOfWallet)
+            } catch (err) {
+                console.log(`\nAn Invalid Seed Was Supplied, Deriving Wallet As A Mnemonic Input\nPlease confirm your address is correct`)
+                var wallet = xrpl.Wallet.fromMnemonic(seedOfWallet)
+            }
+
             console.log(`\nUSING ACCOUNT: ${wallet.classicAddress}`)
 
             var expiration = (Number(rippleLedgerTime) + Number(orderExpiry))
@@ -118,25 +136,28 @@ async function main() {
             var searchCount = 0
             while (searchCount < retrymax) {
                 try {
-                    var sellarray = []
+                    var accountOffers = []
                     var marker = null
                     var first = true
                     while (marker != null || first) {
-                        let offers = await client.request({
-                            command: "book_offers",
-                            taker: wallet.classicAddress,
-                            ledger_index: currentledgerindex,
-                            taker_pays: {
-                                currency: "XRP"
-                            },
-                            taker_gets: {
-                                currency: hex,
-                                issuer: issuer
-                            },
-                            marker: marker
-                        });
+
+                        if (first) {
+                            var offers = await client.request({
+                                "command": "account_offers",
+                                "account": wallet.classicAddress,
+                                "limit": 400
+                            });
+                        } else {
+                            var offers = await client.request({
+                                "command": "account_offers",
+                                "account": wallet.classicAddress,
+                                "limit": 400,
+                                "marker": marker
+                            });
+                        }
+
                         var newdata = offers.result.offers
-                        var sellarray = sellarray.concat(newdata)
+                        var accountOffers = accountOffers.concat(newdata)
                         var marker = offers.result.marker
                         var first = false
                     }
@@ -146,7 +167,7 @@ async function main() {
                     searchCount += 1
 
                     if (searchCount == retrymax) {
-                        fs.writeFileSync("./ERRORS.txt", `\nCOULDN"T GET RELEVANT ORDERS FOR ${name} in Variables ${a}\n LIKELY TO BE AN ISSUE WITH DATA IN THE CONFIG FILE (OR CONNECTIONS/WEBSOCKET)\nTIME:${start}`)
+                        fs.writeFileSync("./ERRORS.txt", `\n${err}\nCOULDN"T GET RELEVANT ORDERS FOR ${name} in Variables ${a}\n LIKELY TO BE AN ISSUE WITH DATA IN THE CONFIG FILE (OR CONNECTIONS/WEBSOCKET)\nTIME:${start}`)
                         process.exit(1)
                     }
                 }
@@ -154,42 +175,45 @@ async function main() {
 
             //Check if Offer Exists, and Remove any Expired Offers
             var newOffer = true
-            for (b in sellarray) {
-                if (sellarray[b].Account == wallet.classicAddress) {
-                    if (sellarray[b].Expiration < rippleLedgerTime) {
-                        console.log(`Expired Offer Exists\nRemoving Offer ${sellarray[b].Sequence}`)
+            for (b in accountOffers) {
+                if (isNaN(accountOffers[b].taker_gets) && !(isNaN(accountOffers[b].taker_pays))) { //check if it is a sell Order for a token
+                    if (accountOffers[b].taker_gets.currency == hex && accountOffers[b].taker_gets.issuer == issuer) { //check if the same token
+                        if (accountOffers[b].expiration < rippleLedgerTime) {  //check if order is expired
+                            console.log(`Expired Offer Exists\nRemoving Offer ${accountOffers[b].Sequence}`)
 
-                        //Remove Order
-                        var searchCount = 0
-                        while (searchCount < retrymax) {
-                            try {
-                                var cancelOffer = await client.autofill({
-                                    "TransactionType": "OfferCancel",
-                                    "Account": wallet.classicAddress,
-                                    "Fee": "20",
-                                    "OfferSequence": sellarray[b].Sequence,
-                                    "LastLedgerSequence": currentledgerindex + 20
-                                })
-                                var signed = wallet.sign(cancelOffer)
-                                var result = await client.submitAndWait(signed.tx_blob);
-                                break
-                            } catch (err) {
-                                console.log(`Error Getting Current Ledger ${searchCount}`)
-                                searchCount += 1
+                            //Remove Order
+                            var searchCount = 0
+                            while (searchCount < retrymax) {
+                                try {
+                                    var cancelOffer = await client.autofill({
+                                        "TransactionType": "OfferCancel",
+                                        "Account": wallet.classicAddress,
+                                        "Fee": "20",
+                                        "OfferSequence": accountOffers[b].seq,
+                                        "LastLedgerSequence": currentledgerindex + 20
+                                    })
 
-                                if (searchCount == retrymax) {
-                                    fs.writeFileSync("./ERRORS.txt", `\nCOULDN"T REMOVE EXPIRED ORDER IN VARIABLE ${a}\nLIKELY TO BE AN ISSUE WITH DATA BEING SUBMITTED TO RIPPLED (OR CONNECTIONS/WEBSOCKET)\nTIME:${start}`)
-                                    process.exit(1)
+                                    var signed = wallet.sign(cancelOffer)
+                                    var result = await client.submitAndWait(signed.tx_blob);
+                                    break
+                                } catch (err) {
+                                    console.log(`Error Getting Current Ledger ${searchCount}`)
+                                    searchCount += 1
+
+                                    if (searchCount == retrymax) {
+                                        fs.writeFileSync("./ERRORS.txt", `\nCOULDN"T REMOVE EXPIRED ORDER IN VARIABLE ${a}\nLIKELY TO BE AN ISSUE WITH DATA BEING SUBMITTED TO RIPPLED (OR CONNECTIONS/WEBSOCKET)\nTIME:${start}`)
+                                        process.exit(1)
+                                    }
                                 }
                             }
-                        }
-                        if (result.result.meta.TransactionResult == "tesSUCCESS") {
-                            console.log(`SUCCESS:            ${signed.hash}`)
+                            if (result.result.meta.TransactionResult == "tesSUCCESS") {
+                                console.log(`SUCCESS:            ${signed.hash}`)
+                            } else {
+                                console.log(`ERROR\n${result.result.meta.TransactionResult}:            ${signed.hash}`)
+                            }
                         } else {
-                            console.log(`ERROR\n${result.result.meta.TransactionResult}:            ${signed.hash}`)
+                            var newOffer = false
                         }
-                    } else {
-                        var newOffer = false
                     }
                 }
             }
@@ -266,7 +290,7 @@ async function main() {
                 try {
                     var Offer = await client.autofill({
                         "TransactionType": "OfferCreate",
-                        "Account": wallet.address,
+                        "Account": wallet.classicAddress,
                         "Expiration": expiration,
                         "Fee": "20",
                         "TakerPays": (priceTosell * value).toFixed(0),
